@@ -1,4 +1,4 @@
-module github.com/juliansarmiento9310/gorm-bulk-insert/v2
+module github.com/juliansarmiento9310/gorm-bulk-insert
 
 go 1.12
 
