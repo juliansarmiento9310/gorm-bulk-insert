@@ -6,7 +6,7 @@ go:
 
 env: GO111MODULE=on
 
-go_import_path: github.com/t-tiger/gorm-bulk-insert
+go_import_path: github.com/juligonza9310/gorm-bulk-insert
 
 script:
   - go test -v ./...
