@@ -17,7 +17,7 @@ import (
 func BulkUpdate(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
 	// Split records with specified size not to exceed Database parameter limit
 	for _, objSet := range splitObjects(objects, chunkSize) {
-		if err := insertObjSet(db, objSet, excludeColumns...); err != nil {
+		if err := updateObjSet(db, objSet, excludeColumns...); err != nil {
 			return err
 		}
 	}
@@ -74,20 +74,21 @@ func updateObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) 
 		mainScope.SQLVars = append(mainScope.SQLVars, scope.SQLVars...)
 	}
 
-	insertOption := ""
-	if val, ok := db.Get("gorm:insert_option"); ok {
+	updateOption := ""
+	if val, ok := db.Get("gorm:update_option"); ok {
 		strVal, ok := val.(string)
 		if !ok {
-			return errors.New("gorm:insert_option should be a string")
+			return errors.New("gorm:update_option should be a string")
 		}
-		insertOption = strVal
+		updateOption = strVal
 	}
 
-	mainScope.Raw(fmt.Sprintf("INSERT INTO %s (%s) VALUES %s %s",
+	mainScope.Raw(fmt.Sprintf("UPDATE %s VALUES (%s) %s",
 		mainScope.QuotedTableName(),
 		strings.Join(dbColumns, ", "),
 		strings.Join(placeholders, ", "),
-		insertOption,
+		//strings.Join(whereCondition, ", "),
+		updateOption,
 	))
 
 	return db.Exec(mainScope.SQL, mainScope.SQLVars...).Error

@@ -9,6 +9,37 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+func ExtractPrymaryKeys(value interface{}) (map[string]interface{}, error) {
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+		value = rv.Interface()
+	}
+	if rv.Kind() != reflect.Struct {
+		return nil, errors.New("value must be kind of Struct")
+	}
+
+	var pksFields = map[string]interface{}{}
+	for _, field := range (&gorm.Scope{Value: value}).Fields() {
+		// Exclude relational record because it's not directly contained in database columns
+		if fieldIsPrimaryAndBlank(field) {
+			if (field.Struct.Name == "CreatedAt" || field.Struct.Name == "UpdatedAt") && field.IsBlank {
+				pksFields[field.DBName] = time.Now()
+			} else if field.StructField.HasDefaultValue && field.IsBlank {
+				// If default value presents and field is empty, assign a default value
+				if val, ok := field.TagSettingsGet("DEFAULT"); ok {
+					pksFields[field.DBName] = val
+				} else {
+					pksFields[field.DBName] = field.Field.Interface()
+				}
+			} else {
+				pksFields[field.DBName] = field.Field.Interface()
+			}
+		}
+	}
+	return pksFields, nil
+}
+
 // Obtain columns and values required for insert from interface
 func ExtractMapValue(value interface{}, excludeColumns []string) (map[string]interface{}, error) {
 	rv := reflect.ValueOf(value)
