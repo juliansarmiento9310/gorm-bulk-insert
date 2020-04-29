@@ -22,19 +22,8 @@ func ExtractPrymaryKeys(value interface{}) (map[string]interface{}, error) {
 	var pksFields = map[string]interface{}{}
 	for _, field := range (&gorm.Scope{Value: value}).Fields() {
 		// Exclude relational record because it's not directly contained in database columns
-		if fieldIsPrimaryAndBlank(field) {
-			if (field.Struct.Name == "CreatedAt" || field.Struct.Name == "UpdatedAt") && field.IsBlank {
-				pksFields[field.DBName] = time.Now()
-			} else if field.StructField.HasDefaultValue && field.IsBlank {
-				// If default value presents and field is empty, assign a default value
-				if val, ok := field.TagSettingsGet("DEFAULT"); ok {
-					pksFields[field.DBName] = val
-				} else {
-					pksFields[field.DBName] = field.Field.Interface()
-				}
-			} else {
-				pksFields[field.DBName] = field.Field.Interface()
-			}
+		if fieldIsValidPrimary(field) {
+			pksFields[field.DBName] = field.Field.Interface()
 		}
 	}
 	return pksFields, nil
@@ -85,4 +74,8 @@ func fieldIsAutoIncrement(field *gorm.Field) bool {
 
 func fieldIsPrimaryAndBlank(field *gorm.Field) bool {
 	return field.IsPrimaryKey && field.IsBlank
+}
+
+func fieldIsValidPrimary(field *gorm.Field) bool {
+	return field.IsPrimaryKey && !field.IsBlank
 }

@@ -8,14 +8,13 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Insert multiple records at once
+//BulkUpdate update multiple records at once
 // [objects]        Must be a slice of struct
 // [chunkSize]      Number of records to insert at once.
 //                  Embedding a large number of variables at once will raise an error beyond the limit of prepared statement.
 //                  Larger size will normally lead the better performance, but 2000 to 3000 is reasonable.
 // [excludeColumns] Columns you want to exclude from insert. You can omit if there is no column you want to exclude.
 func BulkUpdate(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
-
 	// Split records with specified size not to exceed Database parameter limit
 	for _, objSet := range splitObjects(objects, chunkSize) {
 		if err := updateObjSet(db, objSet, excludeColumns...); err != nil {
@@ -41,6 +40,7 @@ func updateObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) 
 	mainScope := db.NewScope(objects[0])
 	// Store placeholders for embedding variables
 	placeholders := make([]string, 0, attrSize)
+	whereCondition := make([]string, 0, attrSize)
 
 	// Replace with database column name
 	dbColumns := make([]string, 0, attrSize)
@@ -54,25 +54,39 @@ func updateObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) 
 			return err
 		}
 
+		pks, err := ExtractPrymaryKeys(obj)
+		if err != nil {
+			return err
+		}
+
 		// If object sizes are different, SQL statement loses consistency
 		if len(objAttrs) != attrSize {
 			return errors.New("attribute sizes are inconsistent")
 		}
 
 		scope := db.NewScope(obj)
-
 		// Append variables
 		variables := make([]string, 0, attrSize)
 		for _, key := range sortedKeys(objAttrs) {
 			scope.AddToVars(objAttrs[key])
-			variables = append(variables, "?")
+			variables = append(variables, key+" = ?")
 		}
 
-		valueQuery := "(" + strings.Join(variables, ", ") + ")"
+		valueQuery := strings.Join(variables, ", ")
 		placeholders = append(placeholders, valueQuery)
+
+		pknew := make([]string, 0, attrSize)
+		for _, key := range sortedKeys(pks) {
+			scope.AddToVars(pks[key])
+			pknew = append(pknew, key+" = ?")
+		}
+
+		whereQuery := strings.Join(pknew, " AND ")
+		whereCondition = append(whereCondition, whereQuery)
 
 		// Also append variables to mainScope
 		mainScope.SQLVars = append(mainScope.SQLVars, scope.SQLVars...)
+
 	}
 
 	updateOption := ""
@@ -84,11 +98,10 @@ func updateObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) 
 		updateOption = strVal
 	}
 
-	mainScope.Raw(fmt.Sprintf("UPDATE %s VALUES (%s) %s",
+	mainScope.Raw(fmt.Sprintf("UPDATE %s SET %s where %s %s",
 		mainScope.QuotedTableName(),
-		strings.Join(dbColumns, ", "),
 		strings.Join(placeholders, ", "),
-		//strings.Join(whereCondition, ", "),
+		strings.Join(whereCondition, ", "),
 		updateOption,
 	))
 
