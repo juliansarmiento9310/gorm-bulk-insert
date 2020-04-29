@@ -2,6 +2,7 @@ package gormbulk
 
 import (
 	"database/sql"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -51,7 +52,7 @@ func Test_extractMapValue(t *testing.T) {
 	fullKeys := []string{"name", "email", "message", "publish", "created_at", "updated_at"}
 	sort.Strings(fullKeys)
 
-	mapVal, err := extractMapValue(value, []string{})
+	mapVal, err := ExtractMapValue(value, []string{})
 	assert.NoError(t, err)
 
 	// Ensure we kept the CreatedAt time
@@ -68,7 +69,7 @@ func Test_extractMapValue(t *testing.T) {
 	assert.Equal(t, fullKeys, mapKeys)
 
 	// test with excluding columns
-	excludedVal, err := extractMapValue(value, []string{"Email", "CreatedAt"})
+	excludedVal, err := ExtractMapValue(value, []string{"Email", "CreatedAt"})
 	assert.NoError(t, err)
 
 	excludedKeys := collectKeys(excludedVal)
@@ -99,7 +100,7 @@ func Test_insertObject(t *testing.T) {
 		sqlmock.NewResult(1, 1),
 	)
 
-	err = insertObjSet(gdb, []interface{}{
+	value, err := insertObjSet(gdb, []interface{}{
 		Table{
 			RegularColumn: "first regular",
 			Custom:        "first custom",
@@ -109,7 +110,7 @@ func Test_insertObject(t *testing.T) {
 			Custom:        "second custom",
 		},
 	})
-
+	fmt.Printf("Valor retornado %v", value)
 	require.NoError(t, err)
 }
 
