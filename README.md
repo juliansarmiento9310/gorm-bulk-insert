@@ -12,7 +12,7 @@ This library is aimed to solve the bulk insert problem.
 
 ## Installation
 
-`$ go get github.com/t-tiger/gorm-bulk-insert`
+`$ go get github.com/juliansarmiento9310/gorm-bulk-insert`
 
 This library depends on gorm, following command is also necessary unless you've installed gorm.
 
@@ -36,6 +36,15 @@ Basically, inserting struct values are automatically chosen. However if you want
 
 In the above pattern `Name` and `Email` fields are excluded.
 
+If you make a Bulk Update use this method:
+
+```go
+
+gormbulk.BulkUpdate(db, sliceValue)
+
+
+```
+
 ### Feature
 
 - Just pass a slice of struct as using gorm normally, records will be created.
@@ -51,7 +60,7 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/t-tiger/gorm-bulk-insert"
+	"github.com/juliansarmiento9310/gorm-bulk-insert"
 	"log"
 	"time"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -93,6 +102,45 @@ func main() {
             // do something
         }
 }
+```
+
+Example for Update 
+
+```go
+type Product struct {
+	gorm.Model
+	Code  string `gorm:"primary_key"`
+	Price uint
+}
+
+func main() {
+	db, err := gorm.Open("sqlite3", "test.db")
+	if err != nil {
+		panic("failed to connect database")
+	}
+	defer db.Close()
+	var products []Product
+
+	var data Product
+	data.Code = "ABC"
+	data.Price = 250
+
+	var data2 Product
+	data2.Code = "L1212"
+	data2.Price = 121
+
+	var massiveData []interface{}
+	massiveData = append(massiveData, data)
+	massiveData = append(massiveData, data2)
+	err = blk.BulkUpdate(db, massiveData)
+	fmt.Printf("-> ", err)
+
+	db.Find(&products)
+
+	fmt.Println("data: ", products[0].Price)
+	fmt.Println("data: ", products[1].Price)
+}
+
 ```
 
 ## License

@@ -10,13 +10,10 @@ import (
 
 //BulkUpdate update multiple records at once
 // [objects]        Must be a slice of struct
-// [chunkSize]      Number of records to insert at once.
-//                  Embedding a large number of variables at once will raise an error beyond the limit of prepared statement.
-//                  Larger size will normally lead the better performance, but 2000 to 3000 is reasonable.
 // [excludeColumns] Columns you want to exclude from insert. You can omit if there is no column you want to exclude.
-func BulkUpdate(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
+func BulkUpdate(db *gorm.DB, objects []interface{}, excludeColumns ...string) error {
 	// Split records with specified size not to exceed Database parameter limit
-	for _, objSet := range splitObjects(objects, chunkSize) {
+	for _, objSet := range splitObjects(objects, 1) {
 		if err := updateObjSet(db, objSet, excludeColumns...); err != nil {
 			return err
 		}
