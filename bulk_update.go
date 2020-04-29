@@ -15,6 +15,7 @@ import (
 //                  Larger size will normally lead the better performance, but 2000 to 3000 is reasonable.
 // [excludeColumns] Columns you want to exclude from insert. You can omit if there is no column you want to exclude.
 func BulkUpdate(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
+
 	// Split records with specified size not to exceed Database parameter limit
 	for _, objSet := range splitObjects(objects, chunkSize) {
 		if err := updateObjSet(db, objSet, excludeColumns...); err != nil {
