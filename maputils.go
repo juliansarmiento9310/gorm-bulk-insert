@@ -48,7 +48,7 @@ func ExtractMapValue(value interface{}, excludeColumns []string) (map[string]int
 
 		if !containString(excludeColumns, field.Struct.Name) && field.StructField.Relationship == nil && !hasForeignKey &&
 			!field.IsIgnored && !fieldIsAutoIncrement(field) && !fieldIsPrimaryAndBlank(field) {
-			if field.Struct.Name == "UpdatedAt" && field.IsBlank {
+			if (field.Struct.Name == "CreatedAt" || field.Struct.Name == "UpdatedAt") && field.IsBlank {
 				attrs[field.DBName] = time.Now()
 			} else if !fieldIsValidPrimary(field) && !field.IsBlank {
 				attrs[field.DBName] = field.Field.Interface()
